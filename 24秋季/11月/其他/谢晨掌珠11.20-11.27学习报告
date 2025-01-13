@@ -1,0 +1,158 @@
+1.本周完成的工作
+ 1.1大纲：进行图像优化多种算法的学习与比对，目标是选出一种经典的算法进行系统学习，并基于此做出一个可供用户使用的图像优化网页（我组的星火杯项目）
+
+ 1.2对比了哪些算法
+  1.2.1超分辨率：SRCNN
+   part1.论文思路：
+    输入预处理：双三次插值（下周任务）
+    基于三层卷积层实现
+     1.特征提取
+     2.非线性映射
+     3.像素重建
+     通过卷积核的不同大小和数量实现三层的不同任务
+    损失函数：均方误差（下周任务）
+
+   part2.代码实现：我的理解以//批注
+    from torch import nn
+    class SRCNN(nn.Module)://继承nn.Module
+    def __init__(self, num_channels=1):
+        super(SRCNN, self).__init__()//调用父类的构造函数（python2.7的写法）
+        //定义def __init__中的参数
+        self.conv1 = nn.Conv2d(num_channels, 64, kernel_size=9, padding=9 // 2)
+         //第一层：输入为单通道（灰度图像），输出为64通道，卷积核大小为9*9
+        self.conv2 = nn.Conv2d(64, 32, kernel_size=5, padding=5 // 2)
+         //第二层：输入为64通道，输出为32通道，卷积核大小为5*5
+        self.conv3 = nn.Conv2d(32, num_channels, kernel_size=5, padding=5 // 2)
+         //第三层：输入为32通道，输出为单通道，卷积核大小为5*5
+         //这里可见卷积层不改变图像大小（padding的作用），但通道数会改变
+        self.relu = nn.ReLU(inplace=True)
+         //激活函数：ReLU
+
+   
+    def forward(self, x):
+        x = self.relu(self.conv1(x))
+        x = self.relu(self.conv2(x))
+         //将一、二层输出通道放入ReLU中进行非线性化
+        x = self.conv3(x)
+         //第三层卷积层不通过ReLU函数，原因：像素重建是线性化的；ReLU函数会导致像素缺失
+         //有种迭代的感觉？
+        return x
+
+    part3.需要注意的是，不同于传统的CNN网络，SRCNN只关注端到端的图像优化，因此没有池化层和全连接层。
+    这里还学习到了池化层和全连接层的作用：
+     池化层：压缩图片大小；更加关注图片整体特征而非重复的局部细节，故stride=kernel_size；防止过拟合；降低计算量
+     全连接层：常用于分类任务或回归问题（后续系统学习CNN的时候再详细化）//理解为将特征交互综合化？
+     
+
+  
+  1.2.2去雾：暗通道先验(DCP)
+   part1.论文思路：
+    暗通道：在无雾图片中，其大多数非天空区域的颜色通道中总有一个通道的值很低甚至趋近于零，称为暗通道
+    1.暗通道计算
+    2.大气散射模型
+    3.估计大气光
+    4.估计透射率
+    5.恢复无雾图像
+
+
+   part2.代码实现：
+
+    import cv2
+    import numpy as np
+
+def dark_channel(image, window_size):
+    """计算暗通道"""
+    min_channel = np.min(image, axis=2)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (window_size, window_size))
+    dark_channel = cv2.erode(min_channel, kernel)
+    return dark_channel
+
+def estimate_atmospheric_light(image, dark_channel):
+    """估计大气光"""
+    num_pixels = image.shape[0] * image.shape[1]
+    num_brightest = int(max(num_pixels * 0.001, 1))  # 选取最亮的0.1%
+    dark_vec = dark_channel.ravel()
+    indices = dark_vec.argsort()[-num_brightest:]
+    
+    brightest_pixels = image.reshape(-1, 3)[indices]
+    atmospheric_light = brightest_pixels.mean(axis=0)
+    return atmospheric_light
+
+def estimate_transmission(image, atmospheric_light, omega, window_size):
+    """估计透射率"""
+    norm_image = image / atmospheric_light
+    transmission = 1 - omega * dark_channel(norm_image, window_size)
+    return transmission
+
+def recover_scene_radiance(image, transmission, atmospheric_light, t0):
+    """恢复无雾图像"""
+    transmission = np.clip(transmission, t0, 1)
+    recovered = (image - atmospheric_light) / transmission[..., None] + atmospheric_light
+    return np.clip(recovered, 0, 255).astype(np.uint8)
+
+def dehaze(image_path, omega=0.95, t0=0.1, window_size=15):
+    """主函数：图像去雾"""
+    # 读取输入图像
+    image = cv2.imread(image_path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    # 1. 计算暗通道
+    dark = dark_channel(image, window_size)
+    
+    # 2. 估计大气光
+    atmospheric_light = estimate_atmospheric_light(image, dark)
+    
+    # 3. 估计透射率
+    transmission = estimate_transmission(image, atmospheric_light, omega, window_size)
+    
+    # 4. 恢复无雾图像
+    dehazed_image = recover_scene_radiance(image, transmission, atmospheric_light, t0)
+    
+    return dehazed_image, dark, transmission
+
+# 示例调用
+if __name__ == "__main__":
+    input_image = "hazy_image.jpg"  # 替换为你的输入图像路径
+    dehazed_image, dark_channel_img, transmission_img = dehaze(input_image)
+    
+    # 保存结果
+    cv2.imwrite("dehazed_image.jpg", cv2.cvtColor(dehazed_image, cv2.COLOR_RGB2BGR))
+    cv2.imwrite("dark_channel.jpg", (dark_channel_img * 255).astype(np.uint8))
+    cv2.imwrite("transmission.jpg", (transmission_img * 255).astype(np.uint8))
+    
+    print("去雾处理完成，结果已保存。")
+
+    代码过程涉及原理陌生，后续进行深入研读
+    自己下载图片对该算法测试结果如图：
+    ![去雾效果](https://github.com/30743/Dehaze/blob/main/Dehaze.png)
+
+2.遇到的问题和困难
+    1.编程：
+     1.1第一次从GitHub克隆仓库，遇到无密钥问题，配置密钥需安装wsl系统，安装后wsl代理配置时用nano编辑器无法保存文件
+     1.2源码保存再打开后出现编码方式错误问题，提示UTF-8编码错误，代码无法运行（Windows）
+     1.3学习SRCNN源码时pytorch初学，源码中的许多库不熟悉，还没找到好的学习资料（斋藤的书正在看，但是进度还没到深度学习网络），啃源码费劲
+     1.4学习DCP时对opencv零基础，短时间不知道如何搭建框架，没找到合适的资源
+     1.5不知道学习前沿理论和基础知识的时间如何分配，还没摸索出合适的节奏，感觉花了很长时间但成效不大
+     1.6在linux环境下克隆仓库失败，还没实现源码运行
+     
+    2.原理：
+     2.1不了解DCP原理，缺乏相关领域基础知识，无法与源码对应
+
+3.解决方法
+    1.编程：
+     1.1后来知道不配代理不影响使用；nano的用法准备在项目实现中边用边学
+     1.5打算以前沿理论为纲，不懂的基础知识再补齐
+
+
+4.下周任务
+    4.0在Linux环境下克隆仓库，实现源码运行（most important）【11.27-11.28】
+    4.1探索GAN在图像优化领域的应用算法，搞懂原理【11.29-12.1】
+    4.2选定一个算法【12.1】
+    4.2学习基本的图像预处理方法 如双三次插值等（尽量）
+
+5.需要的资源和支持
+    5.1关于pytorch、opencv的入门资料
+    5.2刚入门计算机视觉，想找一个经典效果好的算法，希望导师能给些建议
+    5.3后续训练模型时需要实验室的算力支持
+
+    

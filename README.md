@@ -1,4 +1,6 @@
-# 俱乐部学生周总结
+# 俱乐部学生周总结 
+
+## [操作流程](https://github.com/foreverfei/ohlab_weekly_reports/blob/main/%E6%8F%90%E4%BA%A4%E5%89%8D%E8%AF%B7%E7%9C%8B.md)
 
 ## 用途
 用于OH俱乐部学生提交每周的工作进度以及进度交流讨论
@@ -92,6 +94,3 @@
 *   个人心得：
 
     *   对本周工作的反思和体会。
-
-
-
