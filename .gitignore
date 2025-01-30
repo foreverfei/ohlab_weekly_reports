@@ -1,0 +1,133 @@
+# 操作系统生成的文件
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+## Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+## Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# IDE和编辑器文件
+## VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+## JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+## Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# 临时文件
+## 文档临时文件
+~$*.doc*
+~$*.xls*
+~$*.ppt*
+*.~vsd*
+.~lock.*#
+
+## Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 日志文件
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 环境配置
+.env
+.env.local
+.env.*.local
+.python-version
+venv/
+ENV/
+
+# 压缩包
+*.zip
+*.rar
+*.7z
+*.gz
+*.tar
+*.tar.gz
+
+# 媒体文件临时文件
+*.mp4
+*.mov
+*.avi
+*.wmv
+*.tmp
+
+# LaTeX临时文件
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# 其他
+node_modules/
+bower_components/
+*.bak
+*.swp
+*.swo
+.cache/
+- Title: chore: add .gitignore file
+- Description: Add .gitignore to exclude unnecessary files
